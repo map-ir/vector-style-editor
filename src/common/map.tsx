@@ -19,12 +19,15 @@ if (maplibre.getRTLTextPluginStatus() === 'unavailable')
     },
     true
   );
-
+export interface ExtendedMapOptions extends MapOptions {
+  onMapLoad?: (map: maplibregl.Map) => void;
+}
 interface IProps {
-  options?: MapOptions;
+  options?: ExtendedMapOptions;
+  onMapLoad?: (map: maplibregl.Map) => void;
 }
 
-export default function Map({ options: mapOptions }: IProps) {
+export default function Map({ options: mapOptions, onMapLoad }: IProps) {
   const [map, setMap] = useAtom(mapState);
   const [isMapLoaded, setIsMapLoaded] = useAtom(isMapLoadedState);
   const styleObj = useAtomValue(styleObjState);
@@ -59,8 +62,11 @@ export default function Map({ options: mapOptions }: IProps) {
     futureMap.on('load', () => {
       futureMap.resize();
       setIsMapLoaded(true);
-    });
 
+      // ✅ اینجا باید callback رو صدا بزنی
+      if (mapOptions?.onMapLoad) mapOptions.onMapLoad(futureMap);
+      if (onMapLoad) onMapLoad(futureMap);
+    });
     setMap?.(futureMap);
   }, [map, setMap]);
 
