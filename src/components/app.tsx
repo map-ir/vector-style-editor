@@ -75,6 +75,7 @@ function App({
   onSubmit,
   onCancel,
   getDistinctValues,
+  onMapLoad,
 }: IProps) {
   const [styleURLAtom, setStyleURL] = useAtom(styleURLState);
   const setStyleObj = useSetAtom(styleObjState);
@@ -113,7 +114,7 @@ function App({
     <Wrapper locale={locale ?? 'en'}>
       <GlobalStyle />
       <Layers onSubmit={onSubmit} onCancel={onCancel} />
-      <Map options={map} />
+      <Map options={map} onMapLoad={onMapLoad} />
     </Wrapper>
   );
 }

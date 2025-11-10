@@ -1,8 +1,10 @@
 import type { StyleSpecification } from 'maplibre-gl';
 import type { MapOptions } from '../types/map';
+import { ExtendedMapOptions } from 'common/map';
 
 interface IProps {
-  map?: MapOptions;
+  map: ExtendedMapOptions;
+  onMapLoad?: (map: maplibregl.Map) => void;
   locale?: 'fa' | 'en';
   styleURL: string;
   sprite?: string;
