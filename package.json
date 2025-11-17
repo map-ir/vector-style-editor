@@ -1,6 +1,6 @@
 {
   "name": "@map.ir/vector-style-editor",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "type": "module",
   "description": "An editor for styling vector tiles with Mapbox style Spec.",
   "main": "dist/index.js",
