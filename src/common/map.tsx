@@ -74,10 +74,19 @@ export default function Map({ options: mapOptions, onMapLoad }: IProps) {
 
   useEffect(() => {
     if (map && isMapLoaded && styleObj) {
-      map.setStyle(styleObj);
+      const srcName = Object.keys(styleObj.sources)[0];
+      const srcData = styleObj.sources[srcName];
+      const layersStyle = styleObj.layers;
+      if (!map.getSource(srcName)) {
+        map.addSource(srcName, srcData);
+      }
+      for (const layerStyle of layersStyle) {
+        if (!map.getLayer(layerStyle.id)) {
+          map.addLayer(layerStyle);
+        }
+      }
     }
   }, [map, isMapLoaded, styleObj]);
-
   return (
     <MapWrapper>
       <div id="style-editor-map" ref={mapRef}></div>
