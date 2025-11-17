@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import maplibre from 'maplibre-gl';
@@ -64,31 +63,15 @@ export default function Map({ options: mapOptions, onMapLoad }: IProps) {
       futureMap.resize();
       setIsMapLoaded(true);
 
-      // ✅ اینجا باید callback رو صدا بزنی
       if (mapOptions?.onMapLoad) mapOptions.onMapLoad(futureMap);
       if (onMapLoad) onMapLoad(futureMap);
     });
     setMap?.(futureMap);
   }, [map, setMap]);
 
-  // Show the layers on Map
   useEffect(() => {
     if (map && isMapLoaded && styleObj) {
-      const srcName = Object.keys(styleObj.sources)[0];
-      const srcData = styleObj.sources[Object.keys(styleObj.sources)[0]];
-      const layersStyle = styleObj.layers;
-      if (!map.getSource(srcName)) {
-        map.addSource(srcName, srcData);
-      }
-      for (const layerStyle of layersStyle) {
-        if (!map.getLayer(layerStyle.id)) {
-          try {
-            map.addLayer(layerStyle);
-          } catch (err) {
-            console.error(err);
-          }
-        }
-      }
+      map.setStyle(styleObj);
     }
   }, [map, isMapLoaded, styleObj]);
 
