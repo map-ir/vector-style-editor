@@ -16,7 +16,7 @@ const updateStyle = (
   value: DataDrivenPropertyValueSpecification<number[] | number | string>,
   setStyle: Dispatch<SetStateAction<StyleSpecification | null>>
 ) => {
-  if (!layer_id && !map) return;
+  if (!map) return;
 
   switch (type) {
     case 'layout':

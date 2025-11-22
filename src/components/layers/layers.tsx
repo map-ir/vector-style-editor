@@ -26,7 +26,10 @@ import deleteLayer from 'common/utils/delete-layer';
 
 import useOutsideClickHandler from 'hooks/useOutsideClickHandler';
 
-import type { LayerSpecification } from 'maplibre-gl';
+import type {
+  DataDrivenPropertyValueSpecification,
+  LayerSpecification,
+} from 'maplibre-gl';
 // import type { OnValidate } from '@monaco-editor/react/lib/types';
 import type { editor } from 'monaco-editor/esm/vs/editor/editor.api';
 import type { LayerType } from '../../types/map';
@@ -40,8 +43,19 @@ import { ReactComponent as CodeIcon } from '../../assets/icons/code.svg';
 import updateStyle from 'common/utils/update-style';
 
 // type IMarker = Parameters<OnValidate>[0][0];
+type PaintKeys = keyof LayerSpecification['paint'];
+
 type IMarker = editor.IMarker;
 type IEditor = editor.IStandaloneCodeEditor;
+function isValidDataDrivenValue(
+  val: unknown
+): val is DataDrivenPropertyValueSpecification<string | number | number[]> {
+  return (
+    typeof val === 'string' ||
+    typeof val === 'number' ||
+    (Array.isArray(val) && val.every((v) => typeof v === 'number'))
+  );
+}
 
 interface ILayerMetadata {
   name: string;
@@ -82,20 +96,68 @@ function LayersStyle() {
 
   const handleChangeCode = useCallback(
     (value: string, markers?: IMarker[]) => {
-      if (!markers?.length) {
-        setStyleObj((curr) => {
-          if (curr)
-            return {
-              ...curr,
-              layers: JSON.parse(
-                value.replace(/[\n\r]+/g, '').replace(/\t/g, '')
-              ) as LayerSpecification[],
-            };
-          else return curr;
-        });
+      if (markers?.length) return; // JSON invalid
+
+      let parsed: unknown;
+
+      try {
+        parsed = JSON.parse(value);
+      } catch (e) {
+        console.error('JSON parse error:', e);
+        return;
       }
+
+      if (!Array.isArray(parsed)) return;
+
+      const newLayers = parsed as LayerSpecification[];
+
+      setStyleObj((curr) => {
+        if (!curr || !map) return curr;
+
+        const oldLayers = curr.layers;
+
+        newLayers.forEach((newLayer) => {
+          const oldLayer = oldLayers.find((l) => l.id === newLayer.id);
+          if (!oldLayer) return;
+
+          // PAINT
+          if (newLayer.paint) {
+            for (const key in newLayer.paint) {
+              const val = newLayer.paint[key as PaintKeys];
+              const before = oldLayer.paint?.[key as PaintKeys];
+
+              if (
+                JSON.stringify(before) !== JSON.stringify(val) &&
+                isValidDataDrivenValue(val)
+              ) {
+                updateStyle(newLayer.id, map, 'paint', key, val, setStyleObj);
+              }
+            }
+          }
+
+          // LAYOUT
+          if (newLayer.layout) {
+            const newLayout = newLayer.layout as Record<string, unknown>;
+            const oldLayout = oldLayer.layout as Record<string, unknown>;
+
+            for (const key in newLayout) {
+              const val = newLayout[key];
+              const before = oldLayout[key];
+
+              if (
+                JSON.stringify(before) !== JSON.stringify(val) &&
+                isValidDataDrivenValue(val)
+              ) {
+                updateStyle(newLayer.id, map, 'layout', key, val, setStyleObj);
+              }
+            }
+          }
+        });
+
+        return { ...curr, layers: newLayers };
+      });
     },
-    [monaco, editorRef]
+    [map]
   );
 
   function formatDocument() {
@@ -323,7 +385,8 @@ const StyledRow = styled(Row)`
 
 const IconWrapper = styled.div<{ isRtl?: boolean }>`
   cursor: pointer;
-  position: absolute;
+  position: fixed;
+  z-index:9999;
   bottom: 1rem;
   ${(p) =>
     p.isRtl
