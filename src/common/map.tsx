@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import styled from 'styled-components';
-import maplibre from 'maplibre-gl';
+import maplibre, { StyleSpecification } from 'maplibre-gl';
 import { useAtom, useAtomValue } from 'jotai';
 
 import { mapState, isMapLoadedState, styleObjState } from '../atoms/map';
@@ -21,6 +21,8 @@ if (maplibre.getRTLTextPluginStatus() === 'unavailable')
   );
 export interface ExtendedMapOptions extends MapOptions {
   onMapLoad?: (map: maplibregl.Map) => void;
+  sprite?: string; // ← add this
+  glyphs?: string;
 }
 interface IProps {
   options?: ExtendedMapOptions;
@@ -73,20 +75,31 @@ export default function Map({ options: mapOptions, onMapLoad }: IProps) {
   // Show the layers on Map
 
   useEffect(() => {
-    if (map && isMapLoaded && styleObj) {
-      const srcName = Object.keys(styleObj.sources)[0];
-      const srcData = styleObj.sources[srcName];
-      const layersStyle = styleObj.layers;
+    if (!map || !isMapLoaded || !styleObj) return;
+
+    // Add all sources
+    Object.entries(styleObj.sources).forEach(([srcName, srcData]) => {
       if (!map.getSource(srcName)) {
         map.addSource(srcName, srcData);
       }
-      for (const layerStyle of layersStyle) {
-        if (!map.getLayer(layerStyle.id)) {
-          map.addLayer(layerStyle);
-        }
+    });
+
+    // Add or update layers
+    styleObj.layers.forEach((layer) => {
+      if (!map.getLayer(layer.id)) {
+        map.addLayer(layer);
+      } else {
+        // optional: update paint/layout properties
+        Object.entries(layer.paint ?? {}).forEach(([key, value]) => {
+          map.setPaintProperty(layer.id, key, value);
+        });
+        Object.entries(layer.layout ?? {}).forEach(([key, value]) => {
+          map.setLayoutProperty(layer.id, key, value);
+        });
       }
-    }
+    });
   }, [map, isMapLoaded, styleObj]);
+
   return (
     <MapWrapper>
       <div id="style-editor-map" ref={mapRef}></div>
